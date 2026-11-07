@@ -1,0 +1,81 @@
+name: TestFlight
+
+# Builds the iPhone app on Expo's servers and (once ASC app id is set) sends it to TestFlight.
+# Start it from GitHub: Actions > TestFlight > Run workflow.
+#
+# Repository secrets needed (Settings > Secrets and variables > Actions):
+#   EXPO_TOKEN      Expo access token (expo.dev > Account settings > Access tokens)
+#   ASC_KEY_ID      App Store Connect API key ID
+#   ASC_ISSUER_ID   App Store Connect issuer ID
+#   ASC_KEY_P8      Full text of the AuthKey_XXXX.p8 file, including the BEGIN/END lines
+#   APPLE_TEAM_ID   Apple Developer Team ID (developer.apple.com > Account > Membership)
+
+on:
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: Send the build to TestFlight (needs ascAppId in mobile/eas.json)
+        type: boolean
+        default: true
+
+jobs:
+  ios:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EXPO_ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      EXPO_ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      EXPO_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      EXPO_ASC_API_KEY_PATH: ${{ github.workspace }}/asc_key.p8
+      ASC_API_KEY_PATH: ${{ github.workspace }}/asc_key.p8
+      ASC_API_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check secrets are set
+        env:
+          HAS_P8: ${{ secrets.ASC_KEY_P8 != '' }}
+        run: |
+          missing=""
+          [ -n "$EXPO_TOKEN" ] || missing="$missing EXPO_TOKEN"
+          [ -n "$EXPO_ASC_KEY_ID" ] || missing="$missing ASC_KEY_ID"
+          [ -n "$EXPO_ASC_ISSUER_ID" ] || missing="$missing ASC_ISSUER_ID"
+          [ -n "$EXPO_APPLE_TEAM_ID" ] || missing="$missing APPLE_TEAM_ID"
+          [ "$HAS_P8" = "true" ] || missing="$missing ASC_KEY_P8"
+          if [ -n "$missing" ]; then echo "::error::Missing repository secrets:$missing"; exit 1; fi
+
+      - name: Write App Store Connect key
+        run: printf '%s\n' "$KEY" > "$EXPO_ASC_API_KEY_PATH"
+        env:
+          KEY: ${{ secrets.ASC_KEY_P8 }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: npm install --no-audit --no-fund
+
+      - name: Link Expo project
+        run: eas init --non-interactive --force
+
+      - name: Build iOS on Expo
+        run: eas build --platform ios --profile production --non-interactive --wait
+
+      - name: Send to TestFlight
+        if: ${{ inputs.submit }}
+        run: |
+          if ! grep -q '"ascAppId"' eas.json; then
+            echo "::warning::Build finished. Not sent to TestFlight yet: create the app in App Store Connect and add its Apple ID as ascAppId in mobile/eas.json."
+            exit 0
+          fi
+          eas submit --platform ios --profile production --latest --non-interactive --wait
