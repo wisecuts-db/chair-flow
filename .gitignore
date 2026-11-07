@@ -1,6 +1,12 @@
 node_modules/
 .next/
 out/
+.expo/
+dist/
+dist-check/
+web-build/
+ios/
+android/
 .env
 .env.local
 .env*.local

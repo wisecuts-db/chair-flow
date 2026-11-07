@@ -1,43 +1,68 @@
 # Chair Flow
 
-A barbershop app where owners decide what managers, barbers, booth renters and clients can see. Built with Next.js and Supabase; the access rules live in the database (row-level security), not just the app.
+A barbershop app where owners decide what managers, barbers, booth renters and clients can see. It also gives the owner a complete, tamper-proof audit trail for every barber.
 
-## What's in this version
-
-| Screen | Who | What it does |
+| Folder | What it is | Who uses it |
 | --- | --- | --- |
-| `/login` | Everyone | Email sign-in link |
-| `/app` | Owner, manager | Set up your shop (first visit), today's numbers, rent status, alerts, booking and kiosk links |
-| `/app/day` | Everyone on staff | My appointments (check in, complete, no-show), walk-in line, rest of the shop, my bookable hours |
-| `/app/staff` | Everyone on staff | Team list, invites, chairs, licenses, services (renters add their own) |
-| `/app/rent` | Owner, renters, managers if allowed | Contracts (send, sign, countersign), rent charges, payments, CSV export |
-| `/app/permissions` | Owner | "Who sees what" switches per role |
-| `/book/<location id>` | Clients | Public booking: barber, service, day, time, details |
-| `/kiosk/<location id>` | Walk-ins | Shop tablet sign-in; shows your place in line |
+| `mobile/` | iPhone + Android app (Expo / React Native) | Owners, managers, barbers, booth renters; the walk-in kiosk on the shop tablet |
+| `web/` | Next.js website | Clients booking online (`/book/<location id>`); browser kiosk as a backup |
+| `supabase/migrations/` | Database schema, security rules and audit trail | Already applied to the `chair-flow` Supabase project |
 
-Booth renters' own clients and sales are never visible to the shop.
+## The mobile app
 
-## Run it locally
+- **Home** (owner, manager): today's numbers, booth rent status, alerts, a "Share booking link" button, and a button that starts the walk-in kiosk.
+- **Day**: my appointments (check in, complete, no-show), the walk-in line, the rest of the shop's schedule, and my bookable hours.
+- **Staff**: team, invites, chairs, licenses, services, a **Report** for each barber, and account settings.
+- **Rent**: contracts (send, sign, countersign), charges, payments and ledger export.
+- **Access** (owner): "who sees what" switches per role.
+- **Kiosk**: full-screen walk-in sign-in for the shop tablet. Hold the shop name for 3 seconds to exit.
+
+### Run it
 
 ```bash
-cp .env.example .env.local   # already points at the chair-flow Supabase project
+cd mobile
+cp .env.example .env
 npm install
-npm run dev                  # http://localhost:3000
+npx expo install --fix   # lines package versions up with your Expo SDK
+npx expo start           # scan the QR code with Expo Go, or press i / a
 ```
 
-## Supabase setup
+For App Store / Google Play builds, use EAS: `npm i -g eas-cli && eas build`.
 
-The database is live in the `chair-flow` Supabase project (`wujmepphlayugsepqvuv`). Every migration in `supabase/migrations` has already been applied there.
+## Auditing each barber
 
-One manual step in the Supabase dashboard: go to **Authentication → URL Configuration** and add your site URL (for example `http://localhost:3000` and your Vercel URL) to **Redirect URLs**, so sign-in links come back to the app.
+Every change to appointments, sales, walk-ins, services, hours, time off, roster records, documents, contracts, rent and memberships goes into `audit_log`. Each entry records:
 
-## Deploy
+- **who** made the change (`actor`, `actor_membership_id`)
+- **which barber** it's about (`subject_membership_id`)
+- **what** changed (`changed`, plus the full before and after copies of the record)
 
-Import the repo in Vercel, add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from `.env.example`, and deploy.
+The log is append-only. Nobody can edit or delete it through the app or the API, including the owner.
 
-## Known limits (next steps)
+Two database functions power the in-app **Report** screen:
 
-- Text reminders and "your barber is ready" texts aren't wired up yet (needs Twilio or similar).
-- Online deposits and rent payments: planned for Phase 2 via a payment provider such as Stripe Connect.
-- Booking times use the visitor's device time zone, so they're right only for clients in the same time zone as the shop.
-- Contract text and PDF signatures: the app records sign/countersign status. It doesn't generate the document yet.
+- `barber_summary(membership, from, to)`: appointments (completed, no-shows, cancelled, hours in the chair, unique clients), walk-ins served, sales (net, tips, average ticket, discounts and refunds), rent for renters, and counts of changes. The owner can view it, managers can view it if the owner allows them to see others' earnings, and each barber can view their own. A booth renter's own sales are visible only to that renter.
+- `barber_activity(membership, from, to)`: the full change history (owner only), exportable as CSV from the app. Deleted appointments and edited sales are flagged for review.
+
+## One-time Supabase settings (dashboard)
+
+1. **Authentication → Email Templates → Magic Link**: make sure the email includes `{{ .Token }}`, so the app can sign people in with a 6-digit code. For example: `Your Chair Flow code is {{ .Token }}`.
+2. **Authentication → URL Configuration**: add the booking website's URL to Redirect URLs.
+
+## Booking website
+
+```bash
+cd web
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+Deploy to Vercel with the root directory set to `web`, then put that URL in `mobile/.env` as `EXPO_PUBLIC_WEB_URL`.
+
+## Not built yet
+
+- Text reminders and "your barber is ready" texts (needs Twilio or similar)
+- Online deposits and rent payments (planned for Phase 2 with a payment provider such as Stripe Connect)
+- Contract documents/PDFs (the app tracks the sign and countersign status today)
+- Push notifications

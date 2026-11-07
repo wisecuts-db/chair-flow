@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Chair Flow",
+    "slug": "chair-flow",
+    "scheme": "chairflow",
+    "version": "0.1.0",
+    "orientation": "default",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F5F3EE",
+    "ios": {
+      "bundleIdentifier": "com.chairflow.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.chairflow.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#17181B"
+      }
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
