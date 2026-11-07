@@ -1,0 +1,22 @@
+# Build the iPhone app on Expo's servers and send it to TestFlight.
+# Run it from the Expo dashboard (Workflows > TestFlight > Run) or with:
+#   npx eas-cli workflow:run .eas/workflows/testflight.yml
+# Works after the first `npx testflight` run has set up Apple credentials.
+name: TestFlight
+
+# No trigger: this workflow only runs when you start it.
+
+jobs:
+  build_ios:
+    name: Build iOS
+    type: build
+    params:
+      platform: ios
+      profile: production
+
+  testflight:
+    name: Send to TestFlight
+    needs: [build_ios]
+    type: testflight
+    params:
+      build_id: ${{ needs.build_ios.outputs.build_id }}

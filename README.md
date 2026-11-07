@@ -29,6 +29,28 @@ npx expo start           # scan the QR code with Expo Go, or press i / a
 
 For App Store / Google Play builds, use EAS: `npm i -g eas-cli && eas build`.
 
+## Put the iPhone app on TestFlight
+
+You need your Apple Developer account and a free Expo account (expo.dev). It takes one command from any Mac, Windows or Linux computer; Expo builds the app in the cloud.
+
+```bash
+cd mobile
+npm install
+npx testflight
+```
+
+It asks you to:
+1. sign in to Expo (or create an account),
+2. create the Expo project (say yes),
+3. sign in to your Apple Developer account (with your two-factor code),
+4. let it create the signing certificate, provisioning profile and App Store Connect API key (say yes each time).
+
+About 15–25 minutes later the build is in App Store Connect. After Apple finishes processing it (usually 10–15 more minutes), install **TestFlight** on your iPhone and open the invite.
+
+Later builds don't need the computer: on expo.dev open the project, go to **Workflows → TestFlight → Run**. Each build gets the next build number automatically.
+
+The app's Supabase settings for these builds live in `mobile/eas.json`. Once the booking website is deployed, put its URL in `EXPO_PUBLIC_WEB_URL` there so "Share booking link" works.
+
 ## Auditing each barber
 
 Every change to appointments, sales, walk-ins, services, hours, time off, roster records, documents, contracts, rent and memberships goes into `audit_log`. Each entry records:
