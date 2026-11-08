@@ -1,7 +1,7 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'Chair Flow',
+  title: 'ShopBoss',
   description: 'Run your barbershop: bookings, walk-ins, staff, booth rent, and who sees what.',
 };
 

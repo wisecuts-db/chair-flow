@@ -79,7 +79,7 @@ export default function AppShell({ children }) {
     <ShopContext.Provider value={value}>
       <header className="topbar">
         <div className="topbar-inner">
-          <Link className="brand" href="/app">Chair Flow</Link>
+          <Link className="brand" href="/app">ShopBoss</Link>
           <div className="row">
             {state.memberships.length > 1 && (
               <select

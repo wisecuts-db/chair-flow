@@ -3,7 +3,7 @@ import Link from 'next/link';
 export default function Home() {
   return (
     <main className="page" style={{ paddingTop: 48 }}>
-      <div className="brand" style={{ fontSize: 28 }}>Chair Flow</div>
+      <div className="brand" style={{ fontSize: 28 }}>ShopBoss</div>
       <h1 style={{ fontSize: 40, lineHeight: 1.05 }}>Run the shop. Decide who sees what.</h1>
       <p className="muted" style={{ fontSize: 17, margin: 0 }}>
         Bookings, walk-ins, staff, booth rent and contracts for barbershops with employees and booth renters.

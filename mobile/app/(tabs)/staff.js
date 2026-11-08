@@ -115,7 +115,7 @@ export default function Staff() {
               ))}
             </List>
           ) : null}
-          <T tiny muted>They download Chair Flow, sign in with that email, and join automatically.</T>
+          <T tiny muted>They download ShopBoss, sign in with that email, and join automatically.</T>
         </View>
       ) : null}
 

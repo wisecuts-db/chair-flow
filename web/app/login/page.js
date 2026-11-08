@@ -32,7 +32,7 @@ export default function Login() {
 
   return (
     <main className="page" style={{ paddingTop: 48, maxWidth: 440 }}>
-      <a className="brand" href="/">Chair Flow</a>
+      <a className="brand" href="/">ShopBoss</a>
       <h1>Sign in</h1>
       {sent ? (
         <div className="card stack">

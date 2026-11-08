@@ -123,7 +123,7 @@ export default function Rent() {
               start_date: v.start, chair_id: v.chair || null, status: 'sent', sent_at: new Date().toISOString(),
             }))} />
           )}
-          <p className="tiny muted" style={{ margin: 0 }}>The renter signs in Chair Flow; you countersign. Every change is kept in the audit history.</p>
+          <p className="tiny muted" style={{ margin: 0 }}>The renter signs in ShopBoss; you countersign. Every change is kept in the audit history.</p>
         </section>
       )}
 

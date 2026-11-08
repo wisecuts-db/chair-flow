@@ -38,7 +38,7 @@ export default function Login() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Screen>
-        <Text style={{ fontSize: 22, fontWeight: '700', color: C.ink, marginTop: 24 }}>Chair Flow</Text>
+        <Text style={{ fontSize: 22, fontWeight: '700', color: C.ink, marginTop: 24 }}>ShopBoss</Text>
         <Title>{sent ? 'Enter your code' : 'Sign in'}</Title>
         {!sent ? (
           <>

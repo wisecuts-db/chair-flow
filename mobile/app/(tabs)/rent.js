@@ -146,7 +146,7 @@ export default function Rent() {
               }))}
             />
           )}
-          <T tiny muted>The renter signs in Chair Flow and you countersign. Every change is kept in the audit history.</T>
+          <T tiny muted>The renter signs in ShopBoss and you countersign. Every change is kept in the audit history.</T>
         </View>
       ) : null}
 

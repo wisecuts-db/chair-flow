@@ -1,4 +1,4 @@
-# Chair Flow
+# ShopBoss (formerly Chair Flow)
 
 A barbershop app where owners decide what managers, barbers, booth renters and clients can see. It also gives the owner a complete, tamper-proof audit trail for every barber.
 
