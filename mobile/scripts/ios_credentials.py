@@ -100,6 +100,19 @@ def main():
     pub = serialization.load_pem_private_key(key_pem, None).public_key().public_bytes(
         serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
     print('Key fingerprint (safe to share):', hashlib.sha256(pub).hexdigest()[:12])
+    # Apple's .p8 carries its public key too; if it doesn't match the private part, the paste was altered.
+    pk = serialization.load_pem_private_key(key_pem, None)
+    raw_pub = pk.public_key().public_bytes(serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint)
+    der = serialization.load_pem_private_key(key_pem, None).private_bytes(
+        serialization.Encoding.DER, serialization.PrivateFormat.PKCS8, serialization.NoEncryption())
+    pem_body = b''.join(l for l in key_pem.splitlines() if not l.startswith(b'-----'))
+    original = base64.b64decode(pem_body)
+    if raw_pub[1:] in original or raw_pub in original:
+        print('Key self-check: ok (private and public parts match)')
+    elif b'\x03\x42\x00\x04' in original:
+        sys.exit('Key self-check FAILED: the pasted ASC_KEY_P8 text was changed while copying (a letter or symbol differs from Apple\'s file).')
+    else:
+        print('Key self-check: file has no public part to compare')
     # Probe with a harmless read; new keys can take a few minutes to start working.
     for attempt in range(6):
         codes = {}
