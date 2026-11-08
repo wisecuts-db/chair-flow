@@ -9,7 +9,7 @@
     "userInterfaceStyle": "light",
     "backgroundColor": "#F5F3EE",
     "ios": {
-      "bundleIdentifier": "com.chairflow.app",
+      "bundleIdentifier": "Com.chairflow123.app",
       "buildNumber": "1",
       "supportsTablet": true,
       "config": {
@@ -17,7 +17,7 @@
       }
     },
     "android": {
-      "package": "com.chairflow.app",
+      "package": "com.chairflow123.app",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
