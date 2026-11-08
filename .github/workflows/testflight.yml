@@ -8,7 +8,7 @@ name: TestFlight
 #   ASC_KEY_ID      App Store Connect API key ID
 #   ASC_ISSUER_ID   App Store Connect issuer ID
 #   ASC_KEY_P8      Full text of the AuthKey_XXXX.p8 file, including the BEGIN/END lines
-#   APPLE_TEAM_ID   Apple Developer Team ID (developer.apple.com > Account > Membership)
+# Apple Team ID Q2DCVH33V7 is set below (not secret).
 
 on:
   workflow_dispatch:
@@ -29,7 +29,7 @@ jobs:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EXPO_ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       EXPO_ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-      EXPO_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      EXPO_APPLE_TEAM_ID: Q2DCVH33V7
       EXPO_ASC_API_KEY_PATH: ${{ github.workspace }}/asc_key.p8
       ASC_API_KEY_PATH: ${{ github.workspace }}/asc_key.p8
       ASC_API_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -45,7 +45,6 @@ jobs:
           [ -n "$EXPO_TOKEN" ] || missing="$missing EXPO_TOKEN"
           [ -n "$EXPO_ASC_KEY_ID" ] || missing="$missing ASC_KEY_ID"
           [ -n "$EXPO_ASC_ISSUER_ID" ] || missing="$missing ASC_ISSUER_ID"
-          [ -n "$EXPO_APPLE_TEAM_ID" ] || missing="$missing APPLE_TEAM_ID"
           [ "$HAS_P8" = "true" ] || missing="$missing ASC_KEY_P8"
           if [ -n "$missing" ]; then echo "::error::Missing repository secrets:$missing"; exit 1; fi
 
