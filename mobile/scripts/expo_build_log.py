@@ -10,9 +10,23 @@ if not raw:
 b = json.loads(raw)[0]
 print('Build', b.get('id'), b.get('status'), (b.get('error') or {}).get('message'))
 for url in b.get('logFiles') or []:
-    data = urllib.request.urlopen(url, timeout=60).read()
-    if data[:2] == b'\x1f\x8b':
-        data = gzip.decompress(data)
+    resp = urllib.request.urlopen(url, timeout=60)
+    data = resp.read()
+    print('log file:', resp.headers.get('Content-Type'), resp.headers.get('Content-Encoding'), data[:4].hex())
+    for _ in range(3):
+        if data[:2] == b'\x1f\x8b':
+            data = gzip.decompress(data)
+        elif data[:4] == b'\x28\xb5\x2f\xfd':
+            from compression import zstd
+            data = zstd.decompress(data)
+        elif data[:4] == b'PK\x03\x04':
+            import io, zipfile
+            z = zipfile.ZipFile(io.BytesIO(data)); data = b''.join(z.read(n) for n in z.namelist())
+        elif data[:262][257:262] == b'ustar' or data[:1] == b'\x00':
+            import io, tarfile
+            t = tarfile.open(fileobj=io.BytesIO(data)); data = b''.join(t.extractfile(m).read() for m in t.getmembers() if m.isfile())
+        else:
+            break
     out = []
     for ln in data.decode('utf-8', 'replace').splitlines():
         try:
