@@ -52,11 +52,12 @@ def b64url(b):
     return base64.urlsafe_b64encode(b).rstrip(b'=').decode()
 
 
-def token(key_pem, key_id, issuer):
+def token(key_pem, key_id, issuer, individual=False):
     key = serialization.load_pem_private_key(key_pem, password=None)
     header = {'alg': 'ES256', 'kid': key_id, 'typ': 'JWT'}
     now = int(time.time())
-    payload = {'iss': issuer, 'iat': now, 'exp': now + 15 * 60, 'aud': 'appstoreconnect-v1'}
+    payload = {'iat': now, 'exp': now + 15 * 60, 'aud': 'appstoreconnect-v1'}
+    payload.update({'sub': 'user'} if individual else {'iss': issuer})
     signing_input = f"{b64url(json.dumps(header).encode())}.{b64url(json.dumps(payload).encode())}".encode()
     der = key.sign(signing_input, ec.ECDSA(hashes.SHA256()))
     r, s = decode_dss_signature(der)
@@ -67,10 +68,18 @@ def token(key_pem, key_id, issuer):
 class Apple:
     def __init__(self, key_pem, key_id, issuer):
         self.args = (key_pem, key_id, issuer)
+        self.individual = None   # decided on first call
 
     def call(self, method, path, **kw):
-        h = {'Authorization': f'Bearer {token(*self.args)}', 'Content-Type': 'application/json'}
-        r = requests.request(method, API + path, headers=h, timeout=60, **kw)
+        modes = [self.individual] if self.individual is not None else [False, True]
+        for individual in modes:
+            h = {'Authorization': f'Bearer {token(*self.args, individual=individual)}', 'Content-Type': 'application/json'}
+            r = requests.request(method, API + path, headers=h, timeout=60, **kw)
+            if r.status_code != 401:
+                if self.individual is None:
+                    self.individual = individual
+                    print('Signed in to App Store Connect with a', 'individual key' if individual else 'team key')
+                break
         if r.status_code >= 400:
             sys.exit(f'Apple API {method} {path} failed ({r.status_code}): {r.text[:800]}')
         return r.json() if r.text else {}
