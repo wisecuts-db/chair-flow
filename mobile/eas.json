@@ -33,7 +33,8 @@
         "ascApiKeyPath": "$ASC_API_KEY_PATH",
         "ascApiKeyIssuerId": "$ASC_API_KEY_ISSUER_ID",
         "ascApiKeyId": "$ASC_API_KEY_ID",
-        "appleTeamId": "Q2DCVH33V7"
+        "appleTeamId": "Q2DCVH33V7",
+        "ascAppId": "6832260791"
       }
     }
   }
