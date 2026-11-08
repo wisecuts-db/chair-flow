@@ -1,0 +1,22 @@
+name: Expo build log
+
+# Prints the log of the latest iOS build on Expo (for troubleshooting).
+on:
+  workflow_dispatch: {}
+
+jobs:
+  log:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - run: python3 scripts/expo_build_log.py

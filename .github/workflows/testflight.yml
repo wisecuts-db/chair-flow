@@ -125,27 +125,7 @@ jobs:
 
       - name: Show Expo build log (on failure)
         if: failure()
-        run: |
-          eas build:list --platform ios --limit 1 --json --non-interactive > /tmp/b.json || exit 0
-          python3 - <<'PY'
-          import json, urllib.request
-          b = json.load(open('/tmp/b.json'))[0]
-          print('Build', b.get('id'), b.get('status'), (b.get('error') or {}).get('message'))
-          for url in b.get('logFiles') or []:
-              try:
-                  lines = urllib.request.urlopen(url, timeout=60).read().decode('utf-8', 'replace').splitlines()
-              except Exception as e:
-                  print('could not fetch log:', e); continue
-              out = []
-              for ln in lines:
-                  try:
-                      j = json.loads(ln); out.append(f"[{j.get('phase','')}] {j.get('msg','')}")
-                  except Exception:
-                      out.append(ln)
-              bad = [i for i, l in enumerate(out) if 'INSTALL_DEPENDENCIES' in l or 'ERR' in l or 'rror' in l]
-              start = max(0, (bad[0] if bad else len(out)) - 5)
-              print('\n'.join(out[start:start + 120]))
-          PY
+        run: python3 scripts/expo_build_log.py || true
 
       - name: Send to TestFlight
         if: ${{ inputs.submit }}
