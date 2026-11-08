@@ -5,8 +5,7 @@ name: TestFlight
 #
 # Repository secrets needed (Settings > Secrets and variables > Actions):
 #   EXPO_TOKEN      Expo access token (expo.dev > Account settings > Access tokens)
-#   ASC_KEY_ID      App Store Connect API key ID
-#   ASC_ISSUER_ID   App Store Connect issuer ID
+# App Store Connect key ID Y8T5M2GZTW and issuer ID are set below (not secret).
 #   ASC_KEY_P8      Full text of the AuthKey_XXXX.p8 file, including the BEGIN/END lines
 # Apple Team ID Q2DCVH33V7 is set below (not secret).
 
@@ -30,13 +29,13 @@ jobs:
         working-directory: mobile
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-      EXPO_ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-      EXPO_ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      EXPO_ASC_KEY_ID: Y8T5M2GZTW
+      EXPO_ASC_ISSUER_ID: 715f6cd9-abee-4a0a-a03a-c969bcb00ab8
       EXPO_APPLE_TEAM_ID: Q2DCVH33V7
       EXPO_ASC_API_KEY_PATH: ${{ github.workspace }}/asc_key.p8
       ASC_API_KEY_PATH: ${{ github.workspace }}/asc_key.p8
-      ASC_API_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-      ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_API_KEY_ID: Y8T5M2GZTW
+      ASC_API_KEY_ISSUER_ID: 715f6cd9-abee-4a0a-a03a-c969bcb00ab8
     steps:
       - uses: actions/checkout@v5
 
@@ -103,8 +102,8 @@ jobs:
         id: creds
         env:
           ASC_KEY_PATH: ${{ github.workspace }}/asc_key.p8
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_ID: Y8T5M2GZTW
+          ASC_ISSUER_ID: 715f6cd9-abee-4a0a-a03a-c969bcb00ab8
           BUNDLE_ID: Com.chairflow123.app
         run: |
           set -o pipefail
