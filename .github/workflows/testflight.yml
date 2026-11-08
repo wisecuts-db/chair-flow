@@ -52,9 +52,21 @@ jobs:
           if [ -n "$missing" ]; then echo "::error::Missing repository secrets:$missing"; exit 1; fi
 
       - name: Write App Store Connect key
-        run: printf "%s\n" "$KEY" > "$EXPO_ASC_API_KEY_PATH"
         env:
           KEY: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          # Rebuild a clean PEM even if the pasted key lost its line breaks or headers.
+          python3 - <<'PY'
+          import os, re, textwrap
+          raw = os.environ['KEY']
+          body = re.sub(r'-----(BEGIN|END)[A-Z ]*-----', '', raw)
+          body = re.sub(r'[^A-Za-z0-9+/=]', '', body)
+          if len(body) < 100:
+              raise SystemExit('ASC_KEY_P8 looks too short. Paste the whole .p8 file text.')
+          pem = '-----BEGIN PRIVATE KEY-----\n' + '\n'.join(textwrap.wrap(body, 64)) + '\n-----END PRIVATE KEY-----\n'
+          open(os.environ['EXPO_ASC_API_KEY_PATH'], 'w').write(pem)
+          print('App Store Connect key written (%d base64 chars)' % len(body))
+          PY
 
       - uses: actions/setup-node@v5
         with:
@@ -78,6 +90,7 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           BUNDLE_ID: Com.chairflow123.app
         run: |
+          set -o pipefail
           pip install --quiet cryptography requests
           python3 scripts/ios_credentials.py | tee /tmp/creds.log
           echo "changed=$(tail -1 /tmp/creds.log)" >> "$GITHUB_OUTPUT"
