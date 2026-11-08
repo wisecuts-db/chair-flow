@@ -38,6 +38,7 @@ from cryptography.hazmat.primitives.serialization import pkcs12
 from cryptography.x509.oid import NameOID
 
 API = 'https://api.appstoreconnect.apple.com/v1'
+CLOCK_OFFSET = 0  # seconds to add to local time to match Apple's clock
 HERE = os.path.dirname(os.path.abspath(__file__))
 MOBILE = os.path.dirname(HERE)
 STORE = os.path.join(MOBILE, 'credentials')
@@ -55,7 +56,7 @@ def b64url(b):
 def token(key_pem, key_id, issuer, individual=False):
     key = serialization.load_pem_private_key(key_pem, password=None)
     header = {'alg': 'ES256', 'kid': key_id, 'typ': 'JWT'}
-    now = int(time.time())
+    now = int(time.time()) + CLOCK_OFFSET - 60   # backdate a minute to tolerate clock skew
     payload = {'iat': now, 'exp': now + 15 * 60, 'aud': 'appstoreconnect-v1'}
     payload.update({'sub': 'user'} if individual else {'iss': issuer})
     signing_input = f"{b64url(json.dumps(header).encode())}.{b64url(json.dumps(payload).encode())}".encode()
@@ -113,8 +114,16 @@ def main():
         sys.exit('Key self-check FAILED: the pasted ASC_KEY_P8 text was changed while copying (a letter or symbol differs from Apple\'s file).')
     else:
         print('Key self-check: file has no public part to compare')
+    # Match Apple's clock.
+    global CLOCK_OFFSET
+    from email.utils import parsedate_to_datetime
+    r0 = requests.get(API + '/apps', timeout=60)
+    if r0.headers.get('Date'):
+        apple_now = parsedate_to_datetime(r0.headers['Date']).timestamp()
+        CLOCK_OFFSET = int(apple_now - time.time())
+        print(f'Clock difference with Apple: {CLOCK_OFFSET} seconds')
     # Probe with a harmless read; new keys can take a few minutes to start working.
-    for attempt in range(6):
+    for attempt in range(3):
         codes = {}
         for individual in (False, True):
             h = {'Authorization': f'Bearer {token(key_pem, key_id, issuer.lower(), individual)}'}
