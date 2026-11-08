@@ -24,9 +24,18 @@
         "backgroundColor": "#17181B"
       }
     },
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router"
+    ],
     "experiments": {
       "typedRoutes": false
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1238d3cf-1961-44a1-9255-627ec2978bcb"
+      }
+    },
+    "owner": "wisecuts"
   }
 }
