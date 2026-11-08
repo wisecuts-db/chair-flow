@@ -61,8 +61,20 @@ jobs:
           raw = os.environ['KEY']
           body = re.sub(r'-----(BEGIN|END)[A-Z ]*-----', '', raw)
           body = re.sub(r'[^A-Za-z0-9+/=]', '', body)
-          if len(body) < 100:
-              raise SystemExit('ASC_KEY_P8 looks too short. Paste the whole .p8 file text.')
+          # Keep only the key itself: an Apple .p8 key always starts "MIG?AgEAMBMGByqGSM49AgEG".
+          m = re.search(r'MIG.AgEAMBMGByqGSM49AgEG', body)
+          if not m:
+              raise SystemExit('ASC_KEY_P8 does not look like an App Store Connect .p8 key. Paste the whole file text again.')
+          import base64
+          head = base64.b64decode(body[m.start():m.start() + 4])
+          total = head[2] + 3                      # DER: 30 81 <len>
+          need = -(-total // 3) * 4                # base64 length incl. padding
+          extra = len(body) - need
+          body = body[m.start():m.start() + need]
+          if len(body) < need:
+              raise SystemExit('ASC_KEY_P8 is cut off. Paste the whole .p8 file text again.')
+          if extra:
+              print('Note: ignored %d stray characters around the pasted key' % extra)
           pem = '-----BEGIN PRIVATE KEY-----\n' + '\n'.join(textwrap.wrap(body, 64)) + '\n-----END PRIVATE KEY-----\n'
           open(os.environ['EXPO_ASC_API_KEY_PATH'], 'w').write(pem)
           print('App Store Connect key written (%d base64 chars)' % len(body))
