@@ -18,6 +18,9 @@ on:
         type: boolean
         default: true
 
+permissions:
+  contents: write
+
 jobs:
   ios:
     runs-on: ubuntu-latest
@@ -49,7 +52,7 @@ jobs:
           if [ -n "$missing" ]; then echo "::error::Missing repository secrets:$missing"; exit 1; fi
 
       - name: Write App Store Connect key
-        run: printf '%s\n' "$KEY" > "$EXPO_ASC_API_KEY_PATH"
+        run: printf "%s\n" "$KEY" > "$EXPO_ASC_API_KEY_PATH"
         env:
           KEY: ${{ secrets.ASC_KEY_P8 }}
 
@@ -66,6 +69,27 @@ jobs:
 
       - name: Link Expo project
         run: eas init --non-interactive --force
+
+      - name: Apple signing certificate and profile
+        id: creds
+        env:
+          ASC_KEY_PATH: ${{ github.workspace }}/asc_key.p8
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          BUNDLE_ID: Com.chairflow123.app
+        run: |
+          pip install --quiet cryptography requests
+          python3 scripts/ios_credentials.py | tee /tmp/creds.log
+          echo "changed=$(tail -1 /tmp/creds.log)" >> "$GITHUB_OUTPUT"
+
+      - name: Save Expo link and encrypted certificate to the repo
+        run: |
+          git config user.name "Chair Flow CI"
+          git config user.email "ci@users.noreply.github.com"
+          git add credentials app.json
+          if git diff --cached --quiet; then echo "nothing to save"; exit 0; fi
+          git commit -m "CI: save Expo project link and encrypted iOS signing files [skip ci]"
+          git push
 
       - name: Build iOS on Expo
         run: eas build --platform ios --profile production --non-interactive --wait

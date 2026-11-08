@@ -13,3 +13,9 @@ android/
 .vercel
 *.log
 .DS_Store
+
+# iOS signing (generated in CI; the encrypted copy lives in mobile/credentials/)
+credentials.json
+dist-cert.p12
+asc_key.p8
+*.p8
