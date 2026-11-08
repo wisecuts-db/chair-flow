@@ -2,8 +2,11 @@
 """Print the log of the latest iOS build on Expo, decompressed and readable."""
 import gzip, json, subprocess, urllib.request
 
-raw = subprocess.run(['eas', 'build:list', '--platform', 'ios', '--limit', '1', '--json', '--non-interactive'],
-                     capture_output=True, text=True).stdout
+res = subprocess.run(['eas', 'build:list', '--platform', 'ios', '--limit', '1', '--json', '--non-interactive'],
+                     capture_output=True, text=True)
+raw = res.stdout[res.stdout.find('['):]
+if not raw:
+    raise SystemExit('eas build:list failed: ' + res.stderr[-2000:])
 b = json.loads(raw)[0]
 print('Build', b.get('id'), b.get('status'), (b.get('error') or {}).get('message'))
 for url in b.get('logFiles') or []:

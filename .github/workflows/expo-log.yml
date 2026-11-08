@@ -19,4 +19,5 @@ jobs:
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
+      - run: npm install --no-audit --no-fund
       - run: python3 scripts/expo_build_log.py
