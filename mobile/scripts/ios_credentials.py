@@ -97,6 +97,22 @@ def main():
     print('Key ID format:', 'ok' if re.fullmatch(r'[A-Z0-9]{10}', key_id) else f'UNEXPECTED (length {len(key_id)}, expected 10 capital letters/digits)')
     print('Issuer ID format:', 'ok' if re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', issuer.lower()) else f'UNEXPECTED (length {len(issuer)}, expected a 36-character ID like xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)')
     apple = Apple(key_pem, key_id, issuer.lower())
+    pub = serialization.load_pem_private_key(key_pem, None).public_key().public_bytes(
+        serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
+    print('Key fingerprint (safe to share):', hashlib.sha256(pub).hexdigest()[:12])
+    # Probe with a harmless read; new keys can take a few minutes to start working.
+    for attempt in range(6):
+        codes = {}
+        for individual in (False, True):
+            h = {'Authorization': f'Bearer {token(key_pem, key_id, issuer.lower(), individual)}'}
+            codes['individual' if individual else 'team'] = requests.get(API + '/apps?limit=1', headers=h, timeout=60).status_code
+        print(f'Sign-in test {attempt + 1}:', codes)
+        if 200 in codes.values():
+            apple.individual = codes['team'] != 200
+            break
+        time.sleep(60)
+    else:
+        sys.exit('Apple rejected the API key every time. The Key ID, Issuer ID and .p8 file must all come from the same, active key.')
     bundle = os.environ['BUNDLE_ID']
     f = fernet(key_pem)
     os.makedirs(STORE, exist_ok=True)
