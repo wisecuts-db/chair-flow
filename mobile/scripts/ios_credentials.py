@@ -23,6 +23,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import re
 import secrets
 import sys
 import time
@@ -81,7 +82,12 @@ def fernet(key_pem):
 
 def main():
     key_pem = open(os.environ['ASC_KEY_PATH'], 'rb').read()
-    apple = Apple(key_pem, os.environ['ASC_KEY_ID'], os.environ['ASC_ISSUER_ID'])
+    key_id = re.sub(r'\s', '', os.environ['ASC_KEY_ID'])
+    issuer = re.sub(r'\s', '', os.environ['ASC_ISSUER_ID'])
+    # Format checks (values are never printed).
+    print('Key ID format:', 'ok' if re.fullmatch(r'[A-Z0-9]{10}', key_id) else f'UNEXPECTED (length {len(key_id)}, expected 10 capital letters/digits)')
+    print('Issuer ID format:', 'ok' if re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', issuer.lower()) else f'UNEXPECTED (length {len(issuer)}, expected a 36-character ID like xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)')
+    apple = Apple(key_pem, key_id, issuer.lower())
     bundle = os.environ['BUNDLE_ID']
     f = fernet(key_pem)
     os.makedirs(STORE, exist_ok=True)

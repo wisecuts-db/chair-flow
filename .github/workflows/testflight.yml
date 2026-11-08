@@ -79,6 +79,11 @@ jobs:
           open(os.environ['EXPO_ASC_API_KEY_PATH'], 'w').write(pem)
           print('App Store Connect key written (%d base64 chars)' % len(body))
           PY
+          # Pass trimmed IDs to later steps (EAS reads these too).
+          echo "EXPO_ASC_KEY_ID=$(printf '%s' "$EXPO_ASC_KEY_ID" | tr -d '[:space:]')" >> "$GITHUB_ENV"
+          echo "ASC_API_KEY_ID=$(printf '%s' "$EXPO_ASC_KEY_ID" | tr -d '[:space:]')" >> "$GITHUB_ENV"
+          echo "EXPO_ASC_ISSUER_ID=$(printf '%s' "$EXPO_ASC_ISSUER_ID" | tr -d '[:space:]' | tr 'A-F' 'a-f')" >> "$GITHUB_ENV"
+          echo "ASC_API_KEY_ISSUER_ID=$(printf '%s' "$EXPO_ASC_ISSUER_ID" | tr -d '[:space:]' | tr 'A-F' 'a-f')" >> "$GITHUB_ENV
 
       - uses: actions/setup-node@v5
         with:
