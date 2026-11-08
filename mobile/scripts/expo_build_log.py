@@ -13,6 +13,9 @@ for url in b.get('logFiles') or []:
     resp = urllib.request.urlopen(url, timeout=60)
     data = resp.read()
     print('log file:', resp.headers.get('Content-Type'), resp.headers.get('Content-Encoding'), data[:4].hex())
+    if (resp.headers.get('Content-Encoding') or '').lower() == 'br':
+        import brotli
+        data = brotli.decompress(data)
     for _ in range(3):
         if data[:2] == b'\x1f\x8b':
             data = gzip.decompress(data)

@@ -125,7 +125,7 @@ jobs:
 
       - name: Show Expo build log (on failure)
         if: failure()
-        run: python3 scripts/expo_build_log.py || true
+        run: pip install --quiet brotli && python3 scripts/expo_build_log.py || true
 
       - name: Send to TestFlight
         if: ${{ inputs.submit }}
