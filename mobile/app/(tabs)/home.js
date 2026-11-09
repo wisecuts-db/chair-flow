@@ -7,7 +7,7 @@ import { dayBounds, money, ymd } from '../../lib/format';
 import { Badge, Button, C, Card, H2, Item, List, Notice, Row, Screen, Stat, T, Title } from '../../components/ui';
 
 export default function Home() {
-  const { sb, current, can } = useShop();
+  const { sb, current, can, superAdmin } = useShop();
   const [d, setD] = useState(null);
   const loc = current ? current.location_id : null;
 
@@ -23,9 +23,11 @@ export default function Home() {
       const w = await sb.from('walkins').select('id', { count: 'exact', head: true }).eq('location_id', loc).eq('status', 'waiting');
       out.waiting = w.count || 0;
     }
-    if (can('revenue.view')) {
-      const s = await sb.from('sales_daily').select('net_cents').eq('location_id', loc).eq('day', ymd(new Date()));
-      out.sales = (s.data || []).reduce((a, r) => a + (r.net_cents || 0), 0);
+    if (can('revenue.view') || superAdmin) {
+      const s = await sb.from('sales_daily').select('net_cents, renter_owned').eq('location_id', loc).eq('day', ymd(new Date()));
+      const rows = s.data || [];
+      out.sales = rows.filter((r) => !r.renter_owned).reduce((a, r) => a + (r.net_cents || 0), 0);
+      if (superAdmin) out.renterSales = rows.filter((r) => r.renter_owned).reduce((a, r) => a + (r.net_cents || 0), 0);
     }
     const staff = await sb.rpc('location_staff', { loc });
     const chairs = await sb.from('chairs').select('id', { count: 'exact', head: true }).eq('location_id', loc);
@@ -65,7 +67,7 @@ export default function Home() {
     }
     out.alerts = alerts;
     setD(out);
-  }, [sb, loc, current, can]);
+  }, [sb, loc, current, can, superAdmin]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -84,6 +86,7 @@ export default function Home() {
           <Stat label="Appointments" value={d ? d.appts : '…'} />
           {d && d.waiting !== undefined ? <Stat label="Walk-ins waiting" value={d.waiting} /> : null}
           {d && d.sales !== undefined ? <Stat label="Shop sales (net)" value={money(d.sales)} /> : null}
+          {d && d.renterSales !== undefined ? <Stat label="Booth renter sales" value={money(d.renterSales)} /> : null}
           <Stat label="Chairs assigned" value={d ? `${d.chairsUsed} / ${d.chairs}` : '…'} />
         </Row>
       </View>

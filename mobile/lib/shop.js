@@ -27,7 +27,8 @@ export function ShopProvider({ children }) {
     const saved = await AsyncStorage.getItem('cf.loc');
     const current = list.find((m) => m.location_id === saved) || list[0] || null;
     const perms = await loadPerms(current);
-    setState({ ready: true, session, profile, memberships: list, current, perms });
+    const sa = await supabase.rpc('is_super_admin');
+    setState({ ready: true, session, profile, memberships: list, current, perms, superAdmin: sa.data === true });
   }, []);
 
   useEffect(() => {

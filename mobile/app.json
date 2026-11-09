@@ -10,11 +10,11 @@
     "backgroundColor": "#F5F3EE",
     "ios": {
       "bundleIdentifier": "Com.chairflow123.app",
-      "buildNumber": "1",
       "supportsTablet": true,
       "config": {
         "usesNonExemptEncryption": false
-      }
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.chairflow123.app",
@@ -25,7 +25,8 @@
       }
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": false

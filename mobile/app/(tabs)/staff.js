@@ -174,6 +174,18 @@ export default function Staff() {
             <T small muted>{current.locations ? current.locations.name : ''} · {ROLE_LABEL[current.role]}</T>
           )}
           <Button title="Sign out" onPress={() => shop.signOut()} />
+          <Button
+            small
+            title="Delete my account"
+            onPress={() => Alert.alert('Delete your ShopBoss account?', 'Your name, email and sign-in are removed for good. Shop records like past appointments stay, shown as "Deleted user".', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Delete', style: 'destructive', onPress: async () => {
+                const { error: err } = await sb.rpc('delete_my_account');
+                if (err) { Alert.alert('Could not delete account', err.message); return; }
+                await shop.signOut();
+              } },
+            ])}
+          />
         </Card>
       </View>
     </Screen>

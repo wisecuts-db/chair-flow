@@ -172,6 +172,26 @@ def main():
         meta.pop('profile_id', None)  # a new certificate needs a new profile
         changed = True
 
+    # ---- 2a. App ID capabilities (Sign in with Apple) ----
+    b = apple.call('GET', f'/bundleIds?filter[identifier]={bundle}&limit=200')
+    matches = [x for x in b.get('data', []) if x['attributes']['identifier'] == bundle]
+    if not matches:
+        sys.exit(f'Bundle ID {bundle} is not registered in your Apple Developer account.')
+    bundle_rec = matches[0]['id']
+    caps = apple.call('GET', f'/bundleIds/{bundle_rec}/bundleIdCapabilities?limit=200')
+    have = {c['attributes']['capabilityType'] for c in caps.get('data', [])}
+    if 'APPLE_ID_AUTH' not in have:
+        print('Turning on Sign in with Apple for', bundle)
+        apple.call('POST', '/bundleIdCapabilities', json={'data': {
+            'type': 'bundleIdCapabilities',
+            'attributes': {'capabilityType': 'APPLE_ID_AUTH', 'settings': [
+                {'key': 'APPLE_ID_AUTH_APP_CONSENT', 'options': [{'key': 'PRIMARY_APP_CONSENT'}]}]},
+            'relationships': {'bundleId': {'data': {'type': 'bundleIds', 'id': bundle_rec}}}}})
+    if 'APPLE_ID_AUTH' not in meta.get('capabilities', []):
+        meta.pop('profile_id', None)   # profile must be remade to include the new capability
+        meta['capabilities'] = sorted(set(meta.get('capabilities', [])) | {'APPLE_ID_AUTH'})
+        changed = True
+
     # ---- 2. App Store provisioning profile ----
     prof_ok = False
     if os.path.exists(PROFILE) and meta.get('profile_id'):
@@ -181,16 +201,12 @@ def main():
 
     if not prof_ok:
         print('Creating App Store provisioning profile…')
-        b = apple.call('GET', f'/bundleIds?filter[identifier]={bundle}&limit=200')
-        matches = [x for x in b.get('data', []) if x['attributes']['identifier'] == bundle]
-        if not matches:
-            sys.exit(f'Bundle ID {bundle} is not registered in your Apple Developer account.')
         name = f"Chair Flow App Store {dt.datetime.utcnow():%Y%m%d%H%M%S}"
         res = apple.call('POST', '/profiles', json={'data': {
             'type': 'profiles',
             'attributes': {'name': name, 'profileType': 'IOS_APP_STORE'},
             'relationships': {
-                'bundleId': {'data': {'type': 'bundleIds', 'id': matches[0]['id']}},
+                'bundleId': {'data': {'type': 'bundleIds', 'id': bundle_rec}},
                 'certificates': {'data': [{'type': 'certificates', 'id': meta['certificate_id']}]},
             }}})
         open(PROFILE, 'wb').write(base64.b64decode(res['data']['attributes']['profileContent']))
