@@ -178,7 +178,7 @@ def main():
     if not matches:
         sys.exit(f'Bundle ID {bundle} is not registered in your Apple Developer account.')
     bundle_rec = matches[0]['id']
-    caps = apple.call('GET', f'/bundleIds/{bundle_rec}/bundleIdCapabilities?limit=200')
+    caps = apple.call('GET', f'/bundleIds/{bundle_rec}/bundleIdCapabilities')
     have = {c['attributes']['capabilityType'] for c in caps.get('data', [])}
     if 'APPLE_ID_AUTH' not in have:
         print('Turning on Sign in with Apple for', bundle)
