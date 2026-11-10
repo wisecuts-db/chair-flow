@@ -173,6 +173,7 @@ export default function Staff() {
           ) : (
             <T small muted>{current.locations ? current.locations.name : ''} · {ROLE_LABEL[current.role]}</T>
           )}
+          <ChangePassword sb={sb} />
           <Button title="Sign out" onPress={() => shop.signOut()} />
           <Button
             small
@@ -256,5 +257,25 @@ function ServiceForm({ onAdd, renter }) {
       </Row>
       <Button kind="dark" title="Add service" disabled={!name.trim() || !price} onPress={() => { onAdd(name.trim(), price, minutes); setName(''); setPrice(''); }} />
     </Card>
+  );
+}
+
+function ChangePassword({ sb }) {
+  const [open, setOpen] = useState(false);
+  const [pw, setPw] = useState('');
+  const [msg, setMsg] = useState('');
+  if (!open) return <Button title="Change password" onPress={() => { setOpen(true); setMsg(''); }} />;
+  return (
+    <View style={{ gap: 8 }}>
+      <Field label="New password (8+ characters)" value={pw} onChangeText={setPw} secureTextEntry autoCapitalize="none" autoComplete="new-password" textContentType="newPassword" />
+      <Row>
+        <Button small kind="dark" title="Save password" disabled={pw.length < 8} onPress={async () => {
+          const { error: err } = await sb.auth.updateUser({ password: pw });
+          if (err) setMsg(err.message); else { setMsg('Password changed.'); setPw(''); setOpen(false); }
+        }} />
+        <Button small title="Cancel" onPress={() => { setOpen(false); setPw(''); }} />
+      </Row>
+      {msg ? <T small muted>{msg}</T> : null}
+    </View>
   );
 }

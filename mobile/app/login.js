@@ -15,13 +15,13 @@ const toEmail = (v) => {
 
 const FRIENDLY = {
   'Invalid login credentials': 'Wrong email or password.',
-  'Email not confirmed': 'Please confirm your email first. Check your inbox for the code.',
+  'Email not confirmed': 'This account is waiting on email confirmation. Ask your ShopBoss admin to turn off "Confirm email" in Supabase.',
   'User already registered': 'That email already has an account. Sign in instead.',
 };
 
 export default function Login() {
   const shop = useShop();
-  // signin | signup | confirm (enter code after sign-up) | forgot | reset (code + new password)
+  // signin | signup | forgot | reset (emailed code + new password)
   const [mode, setMode] = useState('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -63,12 +63,11 @@ export default function Login() {
       options: { data: { full_name: name.trim() } },
     });
     if (err) throw err;
-    if (!data.session) { setInfo(`We emailed a code to ${email.trim()}. Enter it to finish.`); setMode('confirm'); }
-  });
-
-  const confirm = () => run(async () => {
-    const { error: err } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code.trim(), type: 'signup' });
-    if (err) throw err;
+    if (!data.session) {
+      // Try signing straight in (works when email confirmation is turned off in Supabase).
+      const { error: err2 } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+      if (err2) throw new Error('Your account was created, but sign-in is waiting on an email confirmation setting. Ask your ShopBoss admin to turn off "Confirm email".');
+    }
   });
 
   const sendReset = () => run(async () => {
@@ -110,7 +109,7 @@ export default function Login() {
     }
   });
 
-  const titles = { signin: 'Sign in', signup: 'Create your account', confirm: 'Check your email', forgot: 'Reset password', reset: 'Choose a new password' };
+  const titles = { signin: 'Sign in', signup: 'Create your account', forgot: 'Reset password', reset: 'Choose a new password' };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -153,14 +152,6 @@ export default function Login() {
             <Button kind="dark" title="Create account" onPress={signUp} loading={busy} disabled={!name.trim() || !email.includes('@') || !password} />
             <Row2 left="Already have an account? Sign in" onLeft={() => go('signin')} />
             <T small muted>Barbers and booth renters: use the email your shop owner invited, and you&apos;ll join the shop automatically.</T>
-          </>
-        ) : null}
-
-        {mode === 'confirm' ? (
-          <>
-            <Field label="6-digit code" value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="one-time-code" textContentType="oneTimeCode" maxLength={6} inputStyle={{ fontSize: 24, letterSpacing: 6 }} />
-            <Button kind="dark" title="Confirm" onPress={confirm} loading={busy} disabled={code.trim().length < 6} />
-            <Row2 left="Back to sign in" onLeft={() => go('signin')} />
           </>
         ) : null}
 
