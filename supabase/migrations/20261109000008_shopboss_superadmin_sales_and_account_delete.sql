@@ -54,8 +54,7 @@ begin
   update memberships set status = 'inactive' where user_id = me;
   update profiles set full_name = 'Deleted user', email = null, phone = null, avatar_url = null where id = me;
   update clients set full_name = 'Deleted user', email = null, phone = null, birthday = null, notes = null where user_id = me;
-  delete from auth.identities where user_id = me;
-  delete from auth.sessions where user_id = me;
+  update auth.identities set identity_data = jsonb_build_object('sub', provider_id, 'deleted', true) where user_id = me;
   update auth.users
      set email = 'deleted+' || me || '@deleted.invalid', phone = null, encrypted_password = null,
          raw_user_meta_data = '{}'::jsonb, banned_until = 'infinity'
