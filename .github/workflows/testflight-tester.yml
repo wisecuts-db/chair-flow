@@ -1,0 +1,53 @@
+name: Add TestFlight tester
+
+# Adds someone as an external TestFlight tester for ShopBoss and gives them the latest build.
+# Actions > Add TestFlight tester > Run workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: Tester's Apple ID email
+        required: true
+      first_name:
+        description: First name
+        required: false
+      last_name:
+        description: Last name
+        required: false
+      group:
+        description: TestFlight group (created if missing)
+        required: false
+        default: Testers
+
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v5
+      - name: Write App Store Connect key
+        env:
+          KEY: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          python3 - <<'PY'
+          import os, re, base64, textwrap
+          body = re.sub(r'-----(BEGIN|END)[A-Z ]*-----', '', os.environ['KEY'])
+          body = re.sub(r'[^A-Za-z0-9+/=]', '', body)
+          m = re.search(r'MIG.AgEAMBMGByqGSM49AgEG', body)
+          head = base64.b64decode(body[m.start():m.start() + 4])
+          need = -(-(head[2] + 3) // 3) * 4
+          body = body[m.start():m.start() + need]
+          open('/tmp/asc_key.p8', 'w').write('-----BEGIN PRIVATE KEY-----\n' + '\n'.join(textwrap.wrap(body, 64)) + '\n-----END PRIVATE KEY-----\n')
+          PY
+      - run: pip install --quiet cryptography requests && python3 scripts/testflight_tester.py
+        env:
+          ASC_KEY_PATH: /tmp/asc_key.p8
+          ASC_KEY_ID: Y8T5M2GZTW
+          ASC_ISSUER_ID: 715f6cd9-abee-4a0a-a03a-c969bcb00ab8
+          APP_ID: '6832260791'
+          TESTER_EMAIL: ${{ inputs.email }}
+          TESTER_FIRST: ${{ inputs.first_name }}
+          TESTER_LAST: ${{ inputs.last_name }}
+          GROUP_NAME: ${{ inputs.group }}

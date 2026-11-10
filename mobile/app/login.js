@@ -140,7 +140,10 @@ export default function Login() {
             <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" autoComplete="email" textContentType="username" />
             <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" autoComplete="password" textContentType="password" />
             <Button kind="dark" title="Sign in" onPress={signIn} loading={busy} disabled={!email.trim() || !password} />
-            <Row2 left="Forgot password?" onLeft={() => go('forgot')} right="Create an account" onRight={() => go('signup')} />
+            <Row2 left="Forgot password?" onLeft={() => go('forgot')} />
+            <View style={{ height: 1, backgroundColor: C.line, marginVertical: 4 }} />
+            <T small muted>New to ShopBoss? Use any email, no matter which Apple ID is on this phone.</T>
+            <Button kind="brass" title="Create a new account" onPress={() => go('signup')} />
           </>
         ) : null}
 
