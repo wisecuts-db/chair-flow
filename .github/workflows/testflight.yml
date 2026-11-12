@@ -140,4 +140,4 @@ jobs:
             echo "::warning::Build finished. Not sent to TestFlight yet: create the app in App Store Connect and add its Apple ID as ascAppId in mobile/eas.json."
             exit 0
           fi
-          eas submit --platform ios --profile production --latest --non-interactive --wait
+          eas submit --platform ios --profile production --latest --non-interactive --wait --verbose-fastlane
