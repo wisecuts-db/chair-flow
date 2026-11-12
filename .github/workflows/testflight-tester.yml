@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       email:
-        description: Tester's Apple ID email
+        description: Tester's Apple ID email (or "status" to just list builds)
         required: true
       first_name:
         description: First name
@@ -41,7 +41,9 @@ jobs:
           body = body[m.start():m.start() + need]
           open('/tmp/asc_key.p8', 'w').write('-----BEGIN PRIVATE KEY-----\n' + '\n'.join(textwrap.wrap(body, 64)) + '\n-----END PRIVATE KEY-----\n')
           PY
-      - run: pip install --quiet cryptography requests && python3 scripts/testflight_tester.py
+      - run: |
+          pip install --quiet cryptography requests
+          if [ "${{ inputs.email }}" = "status" ]; then python3 scripts/asc_status.py; else python3 scripts/testflight_tester.py; fi
         env:
           ASC_KEY_PATH: /tmp/asc_key.p8
           ASC_KEY_ID: Y8T5M2GZTW
