@@ -12,6 +12,7 @@ export default function TabsLayout() {
   const isOwner = role === 'owner';
   const staffOnly = role === 'barber' || role === 'renter';
   const showRent = isOwner || role === 'renter' || shop.can('rent.view');
+  const showClients = !staffOnly && shop.can('clients.view_all');
   const icon = (name) => ({ color, size }) => <Ionicons name={name} color={color} size={size} />;
 
   return (
@@ -24,10 +25,11 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="home" options={{ title: 'Home', tabBarIcon: icon('home-outline'), href: staffOnly ? null : '/home' }} />
-      <Tabs.Screen name="day" options={{ title: 'Day', tabBarIcon: icon('calendar-outline') }} />
-      <Tabs.Screen name="staff" options={{ title: 'Staff', tabBarIcon: icon('people-outline') }} />
+      <Tabs.Screen name="day" options={{ title: 'Schedule', tabBarIcon: icon('calendar-outline') }} />
+      <Tabs.Screen name="clients" options={{ title: 'Clients', tabBarIcon: icon('person-circle-outline'), href: showClients ? '/clients' : null }} />
+      <Tabs.Screen name="staff" options={{ title: staffOnly ? 'Me' : 'Team', tabBarIcon: icon('people-outline') }} />
       <Tabs.Screen name="rent" options={{ title: 'Rent', tabBarIcon: icon('cash-outline'), href: showRent ? '/rent' : null }} />
-      <Tabs.Screen name="access" options={{ title: 'Access', tabBarIcon: icon('lock-closed-outline'), href: isOwner ? '/access' : null }} />
+      <Tabs.Screen name="access" options={{ title: 'Access', href: null }} />
     </Tabs>
   );
 }

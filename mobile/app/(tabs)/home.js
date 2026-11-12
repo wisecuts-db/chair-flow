@@ -91,6 +91,12 @@ export default function Home() {
         </Row>
       </View>
 
+      <Row wrap>
+        {can('analytics.view') ? <Button kind="dark" title="Analytics" onPress={() => router.push('/analytics')} style={{ flex: 1, minWidth: 140 }} /> : null}
+        {can('clients.view_all') ? <Button title="Clients" onPress={() => router.push('/clients')} style={{ flex: 1, minWidth: 140 }} /> : null}
+        <Button title="Schedule" onPress={() => router.push('/day')} style={{ flex: 1, minWidth: 140 }} />
+      </Row>
+
       {d && d.rent ? (
         <Card dark>
           <Row style={{ justifyContent: 'space-between' }}>

@@ -52,7 +52,17 @@ export default function Staff() {
 
   return (
     <Screen onRefresh={load}>
-      <Title>Staff &amp; services</Title>
+      <Title>{current.role === 'barber' || current.role === 'renter' ? 'Me' : 'Team'}</Title>
+      {current.role !== 'owner' ? (
+        <Button kind="dark" title="My profile, documents and analytics"
+          onPress={() => router.push({ pathname: '/barber/[id]', params: { id: current.id, name: (shop.profile && shop.profile.full_name) || 'Me' } })} />
+      ) : null}
+      {current.role === 'owner' ? (
+        <Row wrap>
+          <Button title="Who sees what" onPress={() => router.push('/access')} style={{ flex: 1 }} />
+          <Button title="Analytics" onPress={() => router.push('/analytics')} style={{ flex: 1 }} />
+        </Row>
+      ) : null}
       <ErrorText>{error}</ErrorText>
 
       <View>
@@ -71,8 +81,8 @@ export default function Staff() {
                     </T>
                   </View>
                   {m.chair ? <Badge>{m.chair}</Badge> : null}
-                  {m.role !== 'owner' && (current.role === 'owner' || can('earnings.view_others') || m.membership_id === current.id) ? (
-                    <Button small title="Report" onPress={() => router.push({ pathname: '/barber/[id]', params: { id: m.membership_id, name: m.name } })} />
+                  {m.role !== 'owner' && (current.role === 'owner' || can('earnings.view_others') || can('roster.view') || m.membership_id === current.id) ? (
+                    <Button small title="Profile" onPress={() => router.push({ pathname: '/barber/[id]', params: { id: m.membership_id, name: m.name } })} />
                   ) : null}
                   {manage && m.role !== 'owner' ? <Button small title={open ? 'Close' : 'Edit'} onPress={() => setEditing(open ? null : m.membership_id)} /> : null}
                 </Row>
@@ -99,7 +109,7 @@ export default function Staff() {
         <View style={{ gap: 8 }}>
           <H2>Invite someone</H2>
           <InviteForm
-            canInviteManager={current.role === 'owner'}
+            isOwner={current.role === 'owner'}
             onInvite={(email, role) => run(sb.from('invites').upsert({ location_id: loc, email: email.toLowerCase(), role }, { onConflict: 'location_id,email' }))}
           />
           {invites.length > 0 ? (
@@ -159,6 +169,7 @@ export default function Staff() {
       </View>
 
       <View style={{ gap: 8 }}>
+        {current.role === 'owner' ? <ShopSettings /> : null}
         <H2>Account</H2>
         <Card>
           <T strong>{shop.profile && shop.profile.full_name ? shop.profile.full_name : shop.user ? shop.user.email : ''}</T>
@@ -220,11 +231,11 @@ function MemberEditor({ member, record, chairs, onChair, onLicense, onRemove }) 
   );
 }
 
-function InviteForm({ onInvite, canInviteManager }) {
+function InviteForm({ onInvite, isOwner }) {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('barber');
   const roles = [{ value: 'barber', label: 'Barber' }, { value: 'renter', label: 'Booth renter' }];
-  if (canInviteManager) roles.push({ value: 'manager', label: 'Manager' });
+  if (isOwner) roles.push({ value: 'manager', label: 'Manager' }, { value: 'partner', label: 'Managing partner' });
   return (
     <Card>
       <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
@@ -276,6 +287,42 @@ function ChangePassword({ sb }) {
         <Button small title="Cancel" onPress={() => { setOpen(false); setPw(''); }} />
       </Row>
       {msg ? <T small muted>{msg}</T> : null}
+    </View>
+  );
+}
+
+function ShopSettings() {
+  const { sb, current } = useShop();
+  const [v, setV] = useState(null);
+  const [msg, setMsg] = useState('');
+  const loc = current.location_id;
+  useEffect(() => {
+    sb.from('locations').select('name, address, review_url, policies_text').eq('id', loc).maybeSingle()
+      .then(({ data }) => setV(data || { name: '', address: '', review_url: '', policies_text: '' }));
+  }, [sb, loc]);
+  if (!v) return null;
+  const set = (k) => (x) => setV({ ...v, [k]: x });
+  const urlOk = !v.review_url || /^https?:\/\//i.test(v.review_url.trim());
+  return (
+    <View style={{ gap: 8, marginBottom: 18 }}>
+      <H2>Shop settings</H2>
+      <Card>
+        <Field label="Location name" value={v.name || ''} onChangeText={set('name')} />
+        <Field label="Address" value={v.address || ''} onChangeText={set('address')} />
+        <Field label="Review link (Google, Yelp, Booksy, Instagram…)" value={v.review_url || ''} onChangeText={set('review_url')}
+          autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://" />
+        <Field label="Booking policy shown to clients" value={v.policies_text || ''} onChangeText={set('policies_text')} multiline
+          inputStyle={{ minHeight: 70 }} placeholder="e.g. Free cancellation up to 24 hours before." />
+        <Button kind="dark" title="Save settings" disabled={!urlOk || !String(v.name || '').trim()} onPress={async () => {
+          const r = await sb.from('locations').update({
+            name: v.name.trim(), address: (v.address || '').trim() || null,
+            review_url: (v.review_url || '').trim() || null, policies_text: (v.policies_text || '').trim() || null,
+          }).eq('id', loc);
+          setMsg(r.error ? r.error.message : 'Saved.');
+        }} />
+        {!urlOk ? <T small muted>The review link should start with https://</T> : null}
+        {msg ? <T small muted>{msg}</T> : null}
+      </Card>
     </View>
   );
 }

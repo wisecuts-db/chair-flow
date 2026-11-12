@@ -6,7 +6,8 @@ import { Badge, Button, C, Card, Chip, ErrorText, Field, H2, Item, List, Picker,
 
 const STATUS = {
   paid: ['good', 'Paid'],
-  overdue: ['bad', 'Overdue'],
+  overdue: ['bad', 'Late'],
+  partial: ['warn', 'Partial payment'],
   due_soon: ['warn', 'Due soon'],
   upcoming: ['plain', 'Upcoming'],
 };
@@ -60,7 +61,7 @@ export default function Rent() {
   const month = ymd(new Date()).slice(0, 7);
   const collected = ledger.filter((r) => r.due_on.slice(0, 7) === month).reduce((a, r) => a + r.paid_cents, 0);
   const outstanding = ledger.filter((r) => r.display_status !== 'paid').reduce((a, r) => a + r.balance_cents, 0);
-  const shown = ledger.filter((r) => filter === 'all' || r.display_status === filter);
+  const shown = ledger.filter((r) => filter === 'all' || r.display_status === filter || (filter === 'partial' && r.is_partial));
 
   function exportCsv() {
     const head = 'renter,due_on,amount,paid,balance,status';
@@ -153,7 +154,7 @@ export default function Rent() {
       <View style={{ gap: 8 }}>
         <H2>Ledger</H2>
         <Row wrap>
-          {[['all', 'All'], ['overdue', 'Overdue'], ['due_soon', 'Due soon'], ['paid', 'Paid']].map(([id, label]) => (
+          {[['all', 'All'], ['overdue', 'Late'], ['partial', 'Partial'], ['due_soon', 'Due soon'], ['paid', 'Paid']].map(([id, label]) => (
             <Chip key={id} title={label} selected={filter === id} onPress={() => setFilter(id)} style={{ minHeight: 36 }} />
           ))}
         </Row>
@@ -161,7 +162,10 @@ export default function Rent() {
           <Card key={r.charge_id}>
             <Row style={{ justifyContent: 'space-between' }}>
               <T strong>{isRenter ? `Due ${r.due_on}` : nameOf(r.renter_id)}</T>
-              <Badge kind={STATUS[r.display_status][0]}>{STATUS[r.display_status][1]}</Badge>
+              <Row>
+                {r.display_status === 'overdue' && r.is_partial ? <Badge kind="warn">Partial</Badge> : null}
+                <Badge kind={STATUS[r.display_status][0]}>{STATUS[r.display_status][1]}</Badge>
+              </Row>
             </Row>
             <T small muted>{isRenter ? '' : `Due ${r.due_on} · `}{money(r.amount_cents)} · paid {money(r.paid_cents)} · balance {money(r.balance_cents)}</T>
             {isOwner && r.display_status !== 'paid' ? (

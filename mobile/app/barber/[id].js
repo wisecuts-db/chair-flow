@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useShop } from '../../lib/shop';
 import { money, ymd, ROLE_LABEL } from '../../lib/format';
 import { Badge, C, Card, Chip, ErrorText, H2, Item, List, Row, Screen, Stat, T, Title } from '../../components/ui';
+import BarberProfile from '../../components/BarberProfile';
 
 const RANGES = [
   { id: '7', label: '7 days', days: 7 },
@@ -33,7 +34,7 @@ export default function BarberReport() {
     const from = new Date();
     from.setDate(from.getDate() - days);
     const s = await sb.rpc('barber_summary', { p_membership: id, p_from: ymd(from), p_to: ymd(new Date()) });
-    if (s.error) { setError(s.error.message); return; }
+    if (s.error) { setSum(null); if (s.error.message !== 'not allowed') setError(s.error.message); return; }
     setSum(s.data);
     if (isOwner) {
       const a = await sb.rpc('barber_activity', { p_membership: id, p_from: from.toISOString(), p_to: new Date().toISOString(), p_limit: 300 });
@@ -61,7 +62,9 @@ export default function BarberReport() {
       <Pressable onPress={() => router.back()} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
         <Text style={{ color: C.brassInk, fontWeight: '600' }}>‹ Back</Text>
       </Pressable>
-      <Title sub={sum ? ROLE_LABEL[sum.role] : ''}>{name || 'Barber'}</Title>
+      <Title>{name || 'Barber'}</Title>
+      <BarberProfile id={id} />
+      <H2>{current && current.id === id ? 'My analytics' : 'Performance'}</H2>
       <Row wrap>
         {RANGES.map((r) => <Chip key={r.id} title={r.label} selected={range === r.id} onPress={() => setRange(r.id)} style={{ minHeight: 36 }} />)}
       </Row>

@@ -37,4 +37,4 @@ export function minutesAgo(d) {
   return Math.max(0, Math.round((Date.now() - new Date(d).getTime()) / 60000));
 }
 
-export const ROLE_LABEL = { owner: 'Owner', manager: 'Manager', barber: 'Barber', renter: 'Booth renter' };
+export const ROLE_LABEL = { owner: 'Owner', partner: 'Managing partner', manager: 'Manager', barber: 'Barber', renter: 'Booth renter' };

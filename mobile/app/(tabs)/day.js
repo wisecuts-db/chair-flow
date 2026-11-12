@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useShop } from '../../lib/shop';
 import { dayBounds, minutesAgo, money, time } from '../../lib/format';
 import { Badge, Button, C, Card, ErrorText, Field, H2, Item, List, Picker, Row, Screen, T, Title } from '../../components/ui';
+import { sendFromPhone } from '../../lib/texts';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const OPEN = ['booked', 'confirmed', 'checked_in'];
@@ -82,7 +83,7 @@ export default function Day() {
 
   return (
     <Screen onRefresh={load}>
-      <Title sub={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}>My day</Title>
+      <Title sub={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}>{current.role === 'barber' || current.role === 'renter' ? 'My day' : 'Schedule'}</Title>
       <ErrorText>{error}</ErrorText>
 
       {next ? (
@@ -129,6 +130,8 @@ export default function Day() {
           {mine.length === 0 ? <Item last><T small muted>No appointments today.</T></Item> : null}
         </List>
       </View>
+
+      {can('clients.message') ? <ClientTexts staff={staff} /> : null}
 
       {can('walkins.manage') ? (
         <View>
@@ -220,5 +223,96 @@ function HoursForm({ onAdd }) {
       </Row>
       <Button kind="dark" title="Add hours" disabled={!valid} onPress={() => onAdd(day, starts, ends)} />
     </Card>
+  );
+}
+
+// Tomorrow's reminders and today's receipts / review requests, sent from this phone.
+function ClientTexts({ staff }) {
+  const { sb, current } = useShop();
+  const loc = current.location_id;
+  const [tomorrow, setTomorrow] = useState([]);
+  const [done, setDone] = useState([]);
+  const [sent, setSent] = useState({});
+  const [reviewUrl, setReviewUrl] = useState('');
+
+  const load = useCallback(async () => {
+    const sel = 'id, starts_at, status, barber_id, client_id, clients(full_name, phone), services(name, price_cents)';
+    const [t0, t1] = dayBounds(new Date(Date.now() + 86400000));
+    const [d0, d1] = dayBounds();
+    const a = await sb.from('appointments').select(sel).eq('location_id', loc).gte('starts_at', t0).lt('starts_at', t1)
+      .in('status', ['booked', 'confirmed']).order('starts_at');
+    setTomorrow(a.data || []);
+    const b = await sb.from('appointments').select(sel).eq('location_id', loc).gte('starts_at', d0).lt('starts_at', d1)
+      .eq('status', 'completed').order('starts_at');
+    setDone(b.data || []);
+    const ids = [...(a.data || []), ...(b.data || [])].map((x) => x.id);
+    if (ids.length) {
+      const m = await sb.from('message_log').select('appointment_id, kind').in('appointment_id', ids);
+      const map = {};
+      (m.data || []).forEach((x) => { map[`${x.appointment_id}:${x.kind}`] = true; });
+      setSent(map);
+    }
+    const l = await sb.from('locations').select('review_url').eq('id', loc).maybeSingle();
+    setReviewUrl((l.data && l.data.review_url) || '');
+  }, [sb, loc]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const barberName = (mid) => (staff.find((m) => m.membership_id === mid) || {}).name;
+  const send = async (kind, appt) => {
+    const ok = await sendFromPhone(sb, kind, {
+      appt, locationId: loc, shopName: current.locations ? current.locations.name : 'the shop',
+      barberName: barberName(appt.barber_id), reviewUrl,
+    });
+    if (ok) setSent((x) => ({ ...x, [`${appt.id}:${kind}`]: true }));
+  };
+  const btn = (kind, appt, label) => (
+    sent[`${appt.id}:${kind}`]
+      ? <Badge kind="good">{label} sent</Badge>
+      : <Button small title={label} onPress={() => send(kind, appt)} />
+  );
+
+  if (tomorrow.length === 0 && done.length === 0) return null;
+  return (
+    <View style={{ gap: 14 }}>
+      {tomorrow.length > 0 ? (
+        <View>
+          <H2>Remind tomorrow&apos;s clients</H2>
+          <List>
+            {tomorrow.map((a, i) => (
+              <Item key={a.id} last={i === tomorrow.length - 1}>
+                <T small strong style={{ width: 70 }}>{time(a.starts_at)}</T>
+                <View style={{ flex: 1 }}>
+                  <T strong>{a.clients ? a.clients.full_name : 'Client'}</T>
+                  <T tiny muted>{a.services ? a.services.name : ''}{barberName(a.barber_id) ? ` · ${barberName(a.barber_id)}` : ''}</T>
+                </View>
+                {btn('reminder', a, 'Remind')}
+              </Item>
+            ))}
+          </List>
+        </View>
+      ) : null}
+      {done.length > 0 ? (
+        <View>
+          <H2>Finished today</H2>
+          <List>
+            {done.map((a, i) => (
+              <Item key={a.id} last={i === done.length - 1} style={{ flexWrap: 'wrap' }}>
+                <View style={{ flex: 1, minWidth: 140 }}>
+                  <T strong>{a.clients ? a.clients.full_name : 'Client'}</T>
+                  <T tiny muted>{time(a.starts_at)} · {a.services ? a.services.name : ''}{barberName(a.barber_id) ? ` · ${barberName(a.barber_id)}` : ''}</T>
+                </View>
+                <Row>
+                  {btn('receipt', a, 'Receipt')}
+                  {btn('review', a, 'Ask for review')}
+                </Row>
+              </Item>
+            ))}
+          </List>
+          {!reviewUrl ? <T tiny muted style={{ marginTop: 6 }}>Tip: add your review link in Team, under Shop settings, so review requests include it.</T> : null}
+        </View>
+      ) : null}
+      <T tiny muted>Texts open in Messages, written and ready to send from this phone.</T>
+    </View>
   );
 }
