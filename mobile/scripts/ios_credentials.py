@@ -180,16 +180,22 @@ def main():
     bundle_rec = matches[0]['id']
     caps = apple.call('GET', f'/bundleIds/{bundle_rec}/bundleIdCapabilities')
     have = {c['attributes']['capabilityType'] for c in caps.get('data', [])}
-    if 'APPLE_ID_AUTH' not in have:
-        print('Turning on Sign in with Apple for', bundle)
-        apple.call('POST', '/bundleIdCapabilities', json={'data': {
-            'type': 'bundleIdCapabilities',
-            'attributes': {'capabilityType': 'APPLE_ID_AUTH', 'settings': [
-                {'key': 'APPLE_ID_AUTH_APP_CONSENT', 'options': [{'key': 'PRIMARY_APP_CONSENT'}]}]},
-            'relationships': {'bundleId': {'data': {'type': 'bundleIds', 'id': bundle_rec}}}}})
-    if 'APPLE_ID_AUTH' not in meta.get('capabilities', []):
-        meta.pop('profile_id', None)   # profile must be remade to include the new capability
-        meta['capabilities'] = sorted(set(meta.get('capabilities', [])) | {'APPLE_ID_AUTH'})
+    wanted = {
+        'APPLE_ID_AUTH': [{'key': 'APPLE_ID_AUTH_APP_CONSENT', 'options': [{'key': 'PRIMARY_APP_CONSENT'}]}],
+        'PUSH_NOTIFICATIONS': None,
+    }
+    for cap, settings in wanted.items():
+        if cap not in have:
+            print('Turning on', cap, 'for', bundle)
+            attrs = {'capabilityType': cap}
+            if settings:
+                attrs['settings'] = settings
+            apple.call('POST', '/bundleIdCapabilities', json={'data': {
+                'type': 'bundleIdCapabilities', 'attributes': attrs,
+                'relationships': {'bundleId': {'data': {'type': 'bundleIds', 'id': bundle_rec}}}}})
+    if not set(wanted) <= set(meta.get('capabilities', [])):
+        meta.pop('profile_id', None)   # profile must be remade to include the new capabilities
+        meta['capabilities'] = sorted(set(meta.get('capabilities', [])) | set(wanted))
         changed = True
 
     # ---- 2. App Store provisioning profile ----

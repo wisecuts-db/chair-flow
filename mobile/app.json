@@ -26,7 +26,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-notifications",
+        {
+          "color": "#17181B"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

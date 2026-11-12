@@ -297,7 +297,7 @@ function ShopSettings() {
   const [msg, setMsg] = useState('');
   const loc = current.location_id;
   useEffect(() => {
-    sb.from('locations').select('name, address, review_url, policies_text').eq('id', loc).maybeSingle()
+    sb.from('locations').select('name, address, review_url, policies_text, barber_reminder_minutes').eq('id', loc).maybeSingle()
       .then(({ data }) => setV(data || { name: '', address: '', review_url: '', policies_text: '' }));
   }, [sb, loc]);
   if (!v) return null;
@@ -313,10 +313,14 @@ function ShopSettings() {
           autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://" />
         <Field label="Booking policy shown to clients" value={v.policies_text || ''} onChangeText={set('policies_text')} multiline
           inputStyle={{ minHeight: 70 }} placeholder="e.g. Free cancellation up to 24 hours before." />
+        <Picker label="Barbers get a heads-up before each appointment" value={v.barber_reminder_minutes == null ? 60 : v.barber_reminder_minutes}
+          onChange={set('barber_reminder_minutes')}
+          options={[{ value: 15, label: '15 min' }, { value: 30, label: '30 min' }, { value: 60, label: '1 hour' }, { value: 120, label: '2 hours' }, { value: 0, label: 'Off' }]} />
         <Button kind="dark" title="Save settings" disabled={!urlOk || !String(v.name || '').trim()} onPress={async () => {
           const r = await sb.from('locations').update({
             name: v.name.trim(), address: (v.address || '').trim() || null,
             review_url: (v.review_url || '').trim() || null, policies_text: (v.policies_text || '').trim() || null,
+            barber_reminder_minutes: v.barber_reminder_minutes == null ? 60 : v.barber_reminder_minutes,
           }).eq('id', loc);
           setMsg(r.error ? r.error.message : 'Saved.');
         }} />

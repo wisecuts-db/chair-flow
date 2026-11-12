@@ -1,6 +1,7 @@
 import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
+import { unregisterPush } from './push';
 
 const ShopContext = createContext(null);
 export const useShop = () => useContext(ShopContext);
@@ -52,7 +53,7 @@ export function ShopProvider({ children }) {
     user: state.session ? state.session.user : null,
     reload: () => supabase.auth.getSession().then(({ data }) => load(data.session)),
     pickLocation,
-    signOut: () => supabase.auth.signOut(),
+    signOut: async () => { await unregisterPush(); await supabase.auth.signOut(); },
     can: (key) => !!state.current && (state.current.role === 'owner' || !!state.perms[key]),
   }), [state, load, pickLocation]);
 
