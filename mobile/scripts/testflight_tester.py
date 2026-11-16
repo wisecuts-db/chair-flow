@@ -41,8 +41,15 @@ def main():
     found = apple.call('GET', f'/betaTesters?filter[email]={email}&limit=5').get('data', [])
     if found:
         tid = found[0]['id']
-        apple.call('POST', f'/betaGroups/{gid}/relationships/betaTesters', json={'data': [{'type': 'betaTesters', 'id': tid}]})
-        print('Tester already existed; added to', group_name)
+        r = requests.post(API + f'/betaGroups/{gid}/relationships/betaTesters', timeout=60,
+                          headers={'Authorization': f'Bearer {apple_token(apple)}', 'Content-Type': 'application/json'},
+                          json={'data': [{'type': 'betaTesters', 'id': tid}]})
+        if r.status_code < 300:
+            print('Tester already existed; added to', group_name)
+        elif r.status_code == 409:
+            print('Tester is already in', group_name)
+        else:
+            sys.exit(f'Could not add tester ({r.status_code}): {r.text[:500]}')
     else:
         tid = apple.call('POST', '/betaTesters', json={'data': {
             'type': 'betaTesters',
