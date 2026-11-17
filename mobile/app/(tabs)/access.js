@@ -9,7 +9,7 @@ const DEFS = [
   { key: 'roster.view', label: "Each barber's profile & documents", hint: 'Licenses, contracts, 1099s, W-9s; every view is logged', fixed: { barber: 'Own only', renter: 'Own only' } },
   { key: 'schedule.view_all', label: 'Appointments, whole shop', hint: "See every barber's bookings" },
   { key: 'schedule.manage_others', label: 'Book for other barbers', hint: "Move or add others' appointments (never renters')", fixed: { barber: 'Never', renter: 'Never' } },
-  { key: 'rent.view', label: 'Booth rent status, all barbers', hint: 'Paid, late and partial payments', fixed: { barber: 'Hidden', renter: 'Own only' } },
+  { key: 'rent.view', label: 'Booth rent status, all barbers', hint: 'Paid, late and partial payments', fixed: { barber: 'Own only (booth renters)', renter: 'Own only' } },
   { key: 'walkins.manage', label: 'Walk-in list', hint: 'See and run the walk-in line' },
   { key: 'clients.view_all', label: 'Client contact list', hint: 'Phone and email of all shop clients', fixed: { renter: 'Own clients only' } },
   { key: 'analytics.view', label: 'Shop analytics', hint: 'Sales, no-shows, walk-ins, rent, by barber', fixed: { barber: 'Personal only', renter: 'Personal only' } },
@@ -22,11 +22,11 @@ const DEFS = [
   { key: 'messages.send', label: 'Announcements and promos', hint: 'Message staff or clients', fixed: { barber: 'Hidden', renter: 'Own clients' } },
 ];
 
-const ROLES = [['partner', 'Partner'], ['manager', 'Manager'], ['barber', 'Barber'], ['renter', 'Renter']];
+const ROLES = [['manager', 'Manager'], ['barber', 'Barber']];
 
 export default function Access() {
   const { sb, current } = useShop();
-  const [role, setRole] = useState('partner');
+  const [role, setRole] = useState('manager');
   const [rows, setRows] = useState({});
   const [error, setError] = useState('');
   const loc = current ? current.location_id : null;
@@ -50,8 +50,10 @@ export default function Access() {
   async function flip(key, next) {
     const id = `${role}:${key}`;
     setRows((r) => ({ ...r, [id]: next }));
+    // "Barber" covers both employee barbers and booth renters.
+    const roles = role === 'barber' ? ['barber', 'renter'] : role === 'manager' ? ['manager', 'partner'] : [role];
     const { error: err } = await sb.from('role_permissions')
-      .upsert({ location_id: loc, role, permission: key, allowed: next, updated_at: new Date().toISOString() });
+      .upsert(roles.map((r) => ({ location_id: loc, role: r, permission: key, allowed: next, updated_at: new Date().toISOString() })));
     if (err) {
       setError(err.message);
       setRows((r) => ({ ...r, [id]: !next }));
@@ -104,7 +106,7 @@ export default function Access() {
           );
         })}
       </List>
-      <T tiny muted>Managing partners start with everything on; managers start without analytics, booth rent and revenue. Booth renters&apos; own sales and clients stay private from the shop. The database enforces these settings, not just the app.</T>
+      <T tiny muted>Three levels: Owner (everything), Manager and Barber. Barber settings apply to booth renters too, but a renter&apos;s own sales and clients always stay private from the shop. Executives have access above owners at every shop. The database enforces these settings, not just the app.</T>
     </Screen>
   );
 }

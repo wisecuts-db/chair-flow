@@ -29,7 +29,9 @@ export function ShopProvider({ children }) {
     const current = list.find((m) => m.location_id === saved) || list[0] || null;
     const perms = await loadPerms(current);
     const sa = await supabase.rpc('is_super_admin');
-    setState({ ready: true, session, profile, memberships: list, current, perms, superAdmin: sa.data === true });
+    const ex = await supabase.rpc('list_executives');
+    setState({ ready: true, session, profile, memberships: list, current, perms, superAdmin: sa.data === true,
+      executives: (ex.data || []).map((x) => (typeof x === 'string' ? x : x.list_executives)) });
   }, []);
 
   useEffect(() => {

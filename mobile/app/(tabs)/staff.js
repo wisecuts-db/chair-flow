@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { router } from 'expo-router';
 import { useShop } from '../../lib/shop';
-import { money, toCents, ROLE_LABEL } from '../../lib/format';
+import { money, toCents, ROLE_LABEL, EXECUTIVE_LABEL } from '../../lib/format';
 import { Badge, Button, Card, Chip, ErrorText, Field, H2, Item, List, Picker, Row, Screen, T, Title } from '../../components/ui';
 
 export default function Staff() {
@@ -77,7 +77,7 @@ export default function Staff() {
                   <View style={{ flex: 1 }}>
                     <T strong>{m.name}</T>
                     <T tiny muted>
-                      {ROLE_LABEL[m.role]}{m.email ? ` · ${m.email}` : ''}{rec && rec.license_expires ? ` · license exp. ${rec.license_expires}` : ''}
+                      {(shop.executives || []).includes(m.user_id) ? EXECUTIVE_LABEL : ROLE_LABEL[m.role]}{m.email ? ` · ${m.email}` : ''}{rec && rec.license_expires ? ` · license exp. ${rec.license_expires}` : ''}
                     </T>
                   </View>
                   {m.chair ? <Badge>{m.chair}</Badge> : null}
@@ -91,6 +91,8 @@ export default function Staff() {
                     member={m}
                     record={rec}
                     chairs={chairs}
+                    canChangeLevel={current.role === 'owner'}
+                    onLevel={(role) => run(sb.from('memberships').update({ role }).eq('id', m.membership_id))}
                     onChair={(chairId) => run(sb.from('memberships').update({ chair_id: chairId }).eq('id', m.membership_id))}
                     onLicense={(num, exp) => run(sb.from('staff_records').upsert({ membership_id: m.membership_id, license_number: num || null, license_expires: exp || null, updated_at: new Date().toISOString() }))}
                     onRemove={() => Alert.alert('Remove from this location?', m.name, [
@@ -172,7 +174,10 @@ export default function Staff() {
         {current.role === 'owner' ? <ShopSettings /> : null}
         <H2>Account</H2>
         <Card>
-          <T strong>{shop.profile && shop.profile.full_name ? shop.profile.full_name : shop.user ? shop.user.email : ''}</T>
+          <Row style={{ justifyContent: 'space-between' }}>
+            <T strong>{shop.profile && shop.profile.full_name ? shop.profile.full_name : shop.user ? shop.user.email : ''}</T>
+            {shop.superAdmin ? <Badge kind="good">{EXECUTIVE_LABEL}</Badge> : null}
+          </Row>
           <T tiny muted>{shop.user ? shop.user.email : ''}</T>
           {shop.memberships.length > 1 ? (
             <Picker
@@ -182,7 +187,7 @@ export default function Staff() {
               options={shop.memberships.map((m) => ({ value: m.location_id, label: `${m.locations ? m.locations.name : 'Location'} · ${ROLE_LABEL[m.role]}` }))}
             />
           ) : (
-            <T small muted>{current.locations ? current.locations.name : ''} · {ROLE_LABEL[current.role]}</T>
+            <T small muted>{current.locations ? current.locations.name : ''} · {shop.superAdmin ? EXECUTIVE_LABEL : ROLE_LABEL[current.role]}</T>
           )}
           <ChangePassword sb={sb} />
           <Button title="Sign out" onPress={() => shop.signOut()} />
@@ -204,13 +209,21 @@ export default function Staff() {
   );
 }
 
-function MemberEditor({ member, record, chairs, onChair, onLicense, onRemove }) {
+function MemberEditor({ member, record, chairs, onChair, onLicense, onRemove, canChangeLevel, onLevel }) {
   const [num, setNum] = useState(record ? record.license_number || '' : '');
   const [exp, setExp] = useState(record ? record.license_expires || '' : '');
   const currentChair = (chairs.find((c) => c.label === member.chair) || {}).id || null;
   const expOk = !exp || /^\d{4}-\d{2}-\d{2}$/.test(exp);
   return (
     <View style={{ gap: 10, paddingTop: 10 }}>
+      {canChangeLevel ? (
+        <Picker
+          label="Level"
+          value={member.role === 'partner' ? 'manager' : member.role}
+          onChange={onLevel}
+          options={[{ value: 'manager', label: 'Manager' }, { value: 'barber', label: 'Barber' }, { value: 'renter', label: 'Barber · booth renter' }]}
+        />
+      ) : null}
       {chairs.length > 0 ? (
         <Picker
           label="Chair"
@@ -233,13 +246,18 @@ function MemberEditor({ member, record, chairs, onChair, onLicense, onRemove }) 
 
 function InviteForm({ onInvite, isOwner }) {
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState('barber');
-  const roles = [{ value: 'barber', label: 'Barber' }, { value: 'renter', label: 'Booth renter' }];
-  if (isOwner) roles.push({ value: 'manager', label: 'Manager' }, { value: 'partner', label: 'Managing partner' });
+  const [level, setLevel] = useState('barber');
+  const [renter, setRenter] = useState(false);
+  const levels = [{ value: 'barber', label: 'Barber' }];
+  if (isOwner) levels.push({ value: 'manager', label: 'Manager' });
+  const role = level === 'barber' && renter ? 'renter' : level;
   return (
     <Card>
       <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
-      <Row wrap>{roles.map((r) => <Chip key={r.value} title={r.label} selected={role === r.value} onPress={() => setRole(r.value)} style={{ minHeight: 38 }} />)}</Row>
+      <Row wrap>{levels.map((r) => <Chip key={r.value} title={r.label} selected={level === r.value} onPress={() => setLevel(r.value)} style={{ minHeight: 38 }} />)}</Row>
+      {level === 'barber' ? (
+        <Chip title={renter ? '✓ Booth renter (pays chair rent)' : 'Booth renter? Tap if they rent a chair'} selected={renter} onPress={() => setRenter(!renter)} style={{ minHeight: 38, alignSelf: 'flex-start' }} />
+      ) : null}
       <Button kind="dark" title="Invite" disabled={!email.includes('@')} onPress={() => { onInvite(email.trim(), role); setEmail(''); }} />
     </Card>
   );

@@ -5,7 +5,7 @@ import { shortDate } from '../../lib/format';
 import { Button, Card, ErrorText, Field, H2, Item, List, Row, Screen, T, Title } from '../../components/ui';
 
 export default function Clients() {
-  const { sb, current, can } = useShop();
+  const { sb, current, can, superAdmin } = useShop();
   const [clients, setClients] = useState([]);
   const [visits, setVisits] = useState({});
   const [q, setQ] = useState('');
@@ -66,7 +66,7 @@ export default function Clients() {
                   <View style={{ flex: 1 }}>
                     <T strong>{c.full_name}</T>
                     <T tiny muted>
-                      {c.phone || 'No phone'}{v && v.count ? ` · ${v.count} visit${v.count === 1 ? '' : 's'} · last ${shortDate(v.last)}` : ' · no visits yet'}
+                      {c.renter_id ? 'renter client · ' : ''}{c.phone || 'No phone'}{v && v.count ? ` · ${v.count} visit${v.count === 1 ? '' : 's'} · last ${shortDate(v.last)}` : ' · no visits yet'}
                     </T>
                   </View>
                 </Row>
@@ -89,7 +89,9 @@ export default function Clients() {
         </List>
       </View>
       <Card>
-        <T tiny muted>Booth renters&apos; own clients stay private to each renter and aren&apos;t listed here.</T>
+        <T tiny muted>{superAdmin
+          ? 'As an Executive you also see booth renters\' own clients (marked "renter client").'
+          : 'Booth renters\' own clients stay private to each renter and aren\'t listed here.'}</T>
       </Card>
     </Screen>
   );
