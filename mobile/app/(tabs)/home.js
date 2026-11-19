@@ -40,9 +40,9 @@ export default function Home() {
       const r = await sb.from('rent_status_view').select('display_status, balance_cents').eq('location_id', loc);
       const rows = r.data || [];
       out.rent = {
-        overdue: rows.filter((x) => x.display_status === 'overdue').length,
-        dueSoon: rows.filter((x) => x.display_status === 'due_soon').length,
-        owed: rows.filter((x) => x.display_status !== 'paid').reduce((a, x) => a + x.balance_cents, 0),
+        overdue: rows.filter((x) => x.display_status === 'late').length,
+        dueSoon: rows.filter((x) => x.display_status === 'grace').length,
+        owed: rows.filter((x) => ['due', 'grace', 'late'].includes(x.display_status)).reduce((a, x) => a + x.balance_cents, 0),
       };
     }
 
@@ -105,8 +105,8 @@ export default function Home() {
           </Row>
           <Row style={{ justifyContent: 'space-between' }}>
             <RentNum label="Outstanding" value={money(d.rent.owed)} />
-            <RentNum label="Due soon" value={d.rent.dueSoon} />
-            <RentNum label="Overdue" value={d.rent.overdue} color="#F2A07B" />
+            <RentNum label="Grace period" value={d.rent.dueSoon} />
+            <RentNum label="Late" value={d.rent.overdue} color="#F2A07B" />
           </Row>
         </Card>
       ) : null}

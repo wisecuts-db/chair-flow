@@ -15,7 +15,7 @@ export const DOC_KINDS = [
 ];
 const kindLabel = (k) => (DOC_KINDS.find((d) => d.value === k) || { label: k }).label;
 const LICENSE_BADGE = { active: ['good', 'Active'], pending: ['warn', 'Pending'], expired: ['bad', 'Expired'], suspended: ['bad', 'Suspended'] };
-const RENT_BADGE = { paid: ['good', 'Paid'], overdue: ['bad', 'Late'], partial: ['warn', 'Partial'], due_soon: ['warn', 'Due soon'], upcoming: ['plain', 'Upcoming'] };
+const RENT_BADGE = { paid: ['good', 'Paid'], waived: ['plain', 'Waived'], due: ['plain', 'Due'], grace: ['warn', 'Grace period'], late: ['bad', 'Late'] };
 
 export default function BarberProfile({ id }) {
   const { sb, current, can } = useShop();
@@ -187,7 +187,7 @@ export default function BarberProfile({ id }) {
                   <T strong>Due {r.due_on}</T>
                   <T tiny muted>{money(r.amount_cents)} · paid {money(r.paid_cents)} · balance {money(r.balance_cents)}</T>
                 </View>
-                <Badge kind={RENT_BADGE[r.display_status][0]}>{RENT_BADGE[r.display_status][1]}</Badge>
+                <Badge kind={r.paid_late ? 'warn' : RENT_BADGE[r.display_status][0]}>{r.paid_late ? 'Paid late' : RENT_BADGE[r.display_status][1]}</Badge>
               </Item>
             ))}
             {rent.length === 0 ? <Item last><T small muted>No rent charges yet.</T></Item> : null}

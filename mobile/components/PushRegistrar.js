@@ -15,6 +15,7 @@ export default function PushRegistrar() {
 
   useEffect(() => onNotificationTap((data) => {
     if (data && (data.type === 'new_booking' || data.type === 'reminder')) router.push('/day');
+    if (data && data.type === 'rent') router.push('/rent');
   }), []);
 
   return null;

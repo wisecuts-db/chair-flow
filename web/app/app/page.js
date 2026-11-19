@@ -97,9 +97,9 @@ function Dashboard() {
         const r = await sb.from('rent_status_view').select('display_status, balance_cents').eq('location_id', loc);
         const rows = r.data || [];
         out.rent = {
-          overdue: rows.filter((x) => x.display_status === 'overdue').length,
-          dueSoon: rows.filter((x) => x.display_status === 'due_soon').length,
-          owed: rows.filter((x) => x.display_status !== 'paid').reduce((a, x) => a + x.balance_cents, 0),
+          overdue: rows.filter((x) => x.display_status === 'late').length,
+          dueSoon: rows.filter((x) => x.display_status === 'grace').length,
+          owed: rows.filter((x) => ['due', 'grace', 'late'].includes(x.display_status)).reduce((a, x) => a + x.balance_cents, 0),
         };
       }
 
@@ -154,8 +154,8 @@ function Dashboard() {
           </div>
           <div className="grid2" style={{ gridTemplateColumns: 'repeat(3, minmax(0,1fr))' }}>
             <div><div className="stat-num" style={{ fontSize: 22 }}>{money(d.rent.owed)}</div><div className="tiny muted">Outstanding</div></div>
-            <div><div className="stat-num" style={{ fontSize: 22 }}>{d.rent.dueSoon}</div><div className="tiny muted">Due soon</div></div>
-            <div><div className="stat-num" style={{ fontSize: 22, color: '#F2A07B' }}>{d.rent.overdue}</div><div className="tiny muted">Overdue</div></div>
+            <div><div className="stat-num" style={{ fontSize: 22 }}>{d.rent.dueSoon}</div><div className="tiny muted">Grace period</div></div>
+            <div><div className="stat-num" style={{ fontSize: 22, color: '#F2A07B' }}>{d.rent.overdue}</div><div className="tiny muted">Late</div></div>
           </div>
         </section>
       )}

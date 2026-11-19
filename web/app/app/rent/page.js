@@ -6,9 +6,10 @@ import { money, toCents, ymd } from '@/lib/format';
 
 const STATUS = {
   paid: ['good', 'Paid'],
-  overdue: ['bad', 'Overdue'],
-  due_soon: ['warn', 'Due soon'],
-  upcoming: ['plain', 'Upcoming'],
+  waived: ['plain', 'Waived'],
+  due: ['plain', 'Due'],
+  grace: ['warn', 'Grace period'],
+  late: ['bad', 'Late'],
 };
 
 export default function Rent() {
@@ -130,7 +131,7 @@ export default function Rent() {
       <section className="stack">
         <h2>Ledger</h2>
         <div className="row wrap">
-          {[['all', 'All'], ['overdue', 'Overdue'], ['due_soon', 'Due soon'], ['paid', 'Paid']].map(([id, label]) => (
+          {[['all', 'All'], ['late', 'Late'], ['grace', 'Grace'], ['due', 'Due'], ['paid', 'Paid']].map(([id, label]) => (
             <button key={id} className="chip" aria-pressed={filter === id} onClick={() => setFilter(id)} style={{ minHeight: 36 }}>{label}</button>
           ))}
         </div>
@@ -145,7 +146,7 @@ export default function Rent() {
                 <span>{isRenter ? '' : `Due ${r.due_on} · `}{money(r.amount_cents)}</span>
                 <span>Paid {money(r.paid_cents)} · <strong style={{ color: 'var(--ink)' }}>Balance {money(r.balance_cents)}</strong></span>
               </div>
-              {isOwner && r.display_status !== 'paid' && (
+              {isOwner && ['due', 'grace', 'late'].includes(r.display_status) && (
                 <PaymentForm balance={r.balance_cents} onPay={(amount, method) => run(sb.from('rent_payments').insert({ charge_id: r.charge_id, amount_cents: toCents(amount), method }))} />
               )}
             </div>
